@@ -70,36 +70,6 @@ class Application(object):
         self.__main_window.show()
         self.__app.exec()
 
-        # pixmap = self.__painter.getpixmap()
-        # pixmap.save("test.png")
-        #
-        # image = pixmap.toImage()
-        #
-        # ptr = image.bits()
-        # ptr.setsize(image.sizeInBytes())
-        #
-        # # transform_func = lambda c: \
-        # #         0.0 if c[0][0] == 255 and c[0][1] == 255 and c[0][2] == 255 else \
-        # #         1.0 if c[0][0] == 0 and c[0][1] == 0 and c[0][2] == 0 else \
-        # #         (c[0][0] + c[0][1] + c[0][2]) / 3 / 255
-        # transform_func = lambda c: \
-        #     0.0 if c[0][0] == 255 else \
-        #     1.0 if c[0][0] == 0 else \
-        #     (c[0][0] + c[0][1] + c[0][2]) / 3 / 255
-        #
-        # transform_func_vec = np.vectorize(transform_func, signature="(n,m)->()")
-        #
-        # arr = np.asarray(ptr).reshape(image.height() * image.width(), 1, 4)
-        # rsarr1 = transform_func_vec(arr)
-        # rsarr1 = rsarr1.reshape(image.height(), image.width())
-        # print(rsarr1.shape)
-        # # rsarr = np.array(list(map(
-        # #     transform_func,
-        # #     arr)))
-        # # rsarr = rsarr.reshape(image.height(), image.width())
-        # for i in range(image.width()):
-        #     print(i, rsarr1[2][i])
-
 
 if __name__ == '__main__':
     app = Application(sys.argv, "Numbers recognizer v0.0.1")
