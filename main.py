@@ -1,197 +1,8 @@
 import sys
-from enum import Enum
-
 import numpy as np
+from painter import ScenePainter
 
-# from PyQt6 import QtGui
 from PyQt6.QtWidgets import *
-# QApplication, QWidget, QMainWindow, QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, \
-# QSizePolicy, QGraphicsScene, QGraphicsView, QToolButton, QSpacerItem
-from PyQt6.QtGui import *  # QScreen, QPixmap, QPainter, QPen, QBrush, QColor, QFont
-from PyQt6.QtCore import *  # Qt, QRect
-
-
-class ScenePainterMode(Enum):
-    PAINT = 1
-    ERASE = 2
-
-
-class MouseIndicator(object):
-    def paint(self, x: int, y: int, scene: QGraphicsScene):
-        self.hide(scene)
-        return
-
-    def hide(self, scene: QGraphicsScene):
-        return
-
-
-class MouseIndicatorPaint(MouseIndicator):
-    def __init__(self):
-        self.__line_x = None
-        self.__line_y = None
-
-    def paint(self, x: int, y: int, scene: QGraphicsScene):
-        self.hide(scene)
-        length = 20
-        self.__line_x = scene.addLine(x - length / 2, y, x + length / 2, y)
-        self.__line_y = scene.addLine(x, y - length / 2, x, y + length / 2)
-
-    def hide(self, scene: QGraphicsScene):
-        if self.__line_y is not None:
-            scene.removeItem(self.__line_x)
-            scene.removeItem(self.__line_y)
-
-
-class MouseIndicatorErase(MouseIndicator):
-    def __init__(self, size: int):
-        self.__size = size
-        self.__rect = None
-
-    def paint(self, x: int, y: int, scene: QGraphicsScene):
-        self.hide(scene)
-        self.__rect = scene.addRect(x - self.__size / 2, y - self.__size / 2, self.__size, self.__size)
-
-    def hide(self, scene: QGraphicsScene):
-        if self.__rect is not None:
-            scene.removeItem(self.__rect)
-
-
-class ScenePainter(QGraphicsView):
-    def __init__(self):
-        self.__scene = QGraphicsScene(0, 0, 1024, 768)
-        super().__init__(self.__scene)
-
-        self.setMouseTracking(True)
-        self.__mouse_pressed = False
-
-        self.__mouse_indicator = MouseIndicatorPaint()
-        self.__eraser_size = 20
-
-        self.__mode: ScenePainterMode = ScenePainterMode.PAINT
-        self.__mouseX, self.__mouseY = None, None
-        self.__bg = None
-
-    def setmode(self, mode: ScenePainterMode):
-        self.__mode = mode
-        self.__mouse_indicator.hide(self.__scene)
-        if mode == ScenePainterMode.PAINT:
-            self.__mouse_indicator = MouseIndicatorPaint()
-        else:
-            self.__mouse_indicator = MouseIndicatorErase(self.__eraser_size)
-
-    def getpixmap(self):
-        pixmap = QPixmap(int(self.__scene.width()), int(self.__scene.height()))
-        painter = QPainter(pixmap)
-        self.__scene.render(painter)
-        return pixmap
-
-    def resizeEvent(self, a0: QResizeEvent) -> None:
-        super().resizeEvent(a0)
-        if self.__bg is not None:
-            self.__scene.removeItem(self.__bg)
-        self.__scene.setSceneRect(0, 0, self.width(), self.height())
-        self.__bg = self.__scene.addRect(0, 0,
-                                         int(self.__scene.width()),
-                                         int(self.__scene.height()),
-                                         QPen(QColor(255, 255, 255, 255)),
-                                         QBrush(QColor(255, 255, 255, 255)))
-        self.__bg.setZValue(-1)
-
-    def mouseMoveEvent(self, a0: QMouseEvent) -> None:
-        mouse_pos = self.mapToScene(a0.pos().x(), a0.pos().y())
-        if self.__mouse_pressed:
-            if self.__mouseX is not None:
-                if self.__mode == ScenePainterMode.PAINT:
-                    pen = QPen()
-                    pen.setColor(QColor(0, 0, 0, 255))
-                    pen.setWidth(2)
-                    point_from = self.mapToScene(self.__mouseX, self.__mouseY)
-                    self.__scene.addLine(point_from.x(), point_from.y(), mouse_pos.x(), mouse_pos.y(), pen)
-                elif self.__mode == ScenePainterMode.ERASE:
-                    pen = QPen()
-                    pen.setColor(QColor(255, 255, 255, 255))
-                    brush = QBrush()
-                    brush.setColor(QColor(255, 255, 255, 255))
-                    self.__scene.addRect(mouse_pos.x() - self.__eraser_size / 2, mouse_pos.y() - self.__eraser_size / 2,
-                                         self.__eraser_size, self.__eraser_size, pen, brush)
-                else:
-                    print("error: unrecognized mode (", self.__mode, ")")
-                    # TODO: how to terminate?
-            # self.update()
-            self.__mouseX = a0.pos().x()
-            self.__mouseY = a0.pos().y()
-        self.__mouse_indicator.paint(mouse_pos.x(), mouse_pos.y(), self.__scene)
-        super().mouseMoveEvent(a0)
-
-    def mousePressEvent(self, a0: QMouseEvent):
-        super().mousePressEvent(a0)
-        self.__mouse_pressed = True
-
-    def mouseReleaseEvent(self, a0: QMouseEvent) -> None:
-        self.__mouseX, self.__mouseY = None, None
-        self.__mouse_pressed = False
-        super().mouseReleaseEvent(a0)
-
-
-# class Painter(QWidget):
-#     def __init__(self):  # , width: int, height: int):
-#         super().__init__()
-#         # self.resize(200, 200)
-#         self.__canvas = QPixmap(self.width(), self.height())
-#         self.__drawMy()
-#         # self.setPixmap(self.__canvas)
-#         self.__mouseX, self.__mouseY = None, None
-#
-#     def resizeEvent(self, a0: QResizeEvent) -> None:
-#         super().resizeEvent(a0)
-#         print("resize:", a0)
-#         old_canvas = QPixmap(self.__canvas)
-#         self.__canvas = QPixmap(self.width(), self.height())
-#         painter = QPainter(self.__canvas)
-#         painter.fillRect(0, 0, self.__canvas.width() - 1, self.__canvas.height() - 1, QColor("white"))
-#         painter.drawPixmap(0, 0, old_canvas.width(), old_canvas.height(), old_canvas)
-#         painter.end()
-#
-#     def mouseMoveEvent(self, a0: QMouseEvent) -> None:
-#         if self.__mouseX is not None:
-#             painter = QPainter(self.__canvas)
-#             pen = QPen()
-#             pen.setWidth(2)
-#             painter.setPen(pen)
-#             painter.drawLine(self.__mouseX, self.__mouseY, a0.pos().x(), a0.pos().y())
-#             painter.end()
-#             self.update()
-#         self.__mouseX = a0.pos().x()
-#         self.__mouseY = a0.pos().y()
-#         super().mouseMoveEvent(a0)
-#
-#     def mouseReleaseEvent(self, a0: QMouseEvent) -> None:
-#         self.__mouseX, self.__mouseY = None, None
-#         super().mouseReleaseEvent(a0)
-#
-#     def paintEvent(self, a0: QPaintEvent) -> None:
-#         painter = QPainter(self)
-#         painter.drawPixmap(0, 0, self.__canvas)
-#         painter.end()
-#         super().paintEvent(a0)
-#
-#     def __drawMy(self):
-#         painter = QPainter(self.__canvas)
-#
-#         # brush = QBrush()
-#         # brush.setColor(QColor("green"))
-#         # painter.setBrush(brush)
-#         painter.fillRect(0, 0, self.__canvas.width() - 1, self.__canvas.height() - 1, QColor("white"))
-#
-#         pen = QPen()
-#         pen.setWidth(2)
-#         pen.setColor(QColor("red"))
-#         painter.setPen(pen)
-#         font = QFont()
-#         font.setPointSize(30)
-#         painter.setFont(font)
-#         painter.drawText(0, 0, 200, 100, Qt.AlignmentFlag.AlignCenter, "Hello world!")
-#         painter.end()
 
 
 class Application(object):
@@ -208,8 +19,6 @@ class Application(object):
 
         self.__painter_toolbar = QToolBar()
         self.__painter_toolbar.setFixedHeight(40)
-        # self.__painter_toolbar_layout = QHBoxLayout()
-        # self.__painter_toolbar.setLayout(self.__painter_toolbar_layout)
         self.__painter_toolbutton_modepaint = QToolButton()
         self.__painter_toolbutton_modepaint.setText("Paint")
         self.__painter_toolbutton_modepaint.setFixedWidth(30)
@@ -222,9 +31,6 @@ class Application(object):
         self.__painter_toolbutton_modeerase.clicked.connect(self.__painter_toolbutton_modeerase_clicked)
         self.__painter_toolbar.addWidget(self.__painter_toolbutton_modepaint)
         self.__painter_toolbar.addWidget(self.__painter_toolbutton_modeerase)
-        # self.__painter_toolbar_layout.addWidget(self.__painter_toolbutton_modepaint)
-        # self.__painter_toolbar_layout.addWidget(self.__painter_toolbutton_modeerase)
-        # self.__painter_toolbar_layout.addSpacerItem(QSpacerItem(10, 10, QSizePolicy.Policy.Expanding))
 
         self.__painter_panel = QWidget()
         self.__painter_layout = QVBoxLayout()
@@ -293,5 +99,5 @@ class Application(object):
 
 
 if __name__ == '__main__':
-    app = Application(sys.argv, "Hello Qt World!")
+    app = Application(sys.argv, "Numbers recognizer v0.0.1")
     app.run()
