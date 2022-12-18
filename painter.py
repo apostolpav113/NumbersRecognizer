@@ -32,6 +32,8 @@ class MouseIndicatorPaint(MouseIndicator):
         if self.__line_y is not None:
             scene.removeItem(self.__line_x)
             scene.removeItem(self.__line_y)
+        self.__line_x = None
+        self.__line_y = None
 
 
 class MouseIndicatorErase(MouseIndicator):
@@ -46,6 +48,7 @@ class MouseIndicatorErase(MouseIndicator):
     def hide(self, scene: QGraphicsScene):
         if self.__rect is not None:
             scene.removeItem(self.__rect)
+        self.__rect = None
 
 
 class ScenePainter(QGraphicsView):
@@ -72,6 +75,7 @@ class ScenePainter(QGraphicsView):
             self.__mouse_indicator = MouseIndicatorErase(self.__eraser_size)
 
     def getpixmap(self):
+        self.__mouse_indicator.hide(self.__scene)
         pixmap = QPixmap(int(self.__scene.width()), int(self.__scene.height()))
         painter = QPainter(pixmap)
         self.__scene.render(painter)
@@ -90,6 +94,7 @@ class ScenePainter(QGraphicsView):
         self.__bg.setZValue(-1)
 
     def mouseMoveEvent(self, a0: QMouseEvent) -> None:
+        super().mouseMoveEvent(a0)
         mouse_pos = self.mapToScene(a0.pos().x(), a0.pos().y())
         if self.__mouse_pressed:
             if self.__mouseX is not None:
@@ -109,11 +114,9 @@ class ScenePainter(QGraphicsView):
                 else:
                     print("error: unrecognized mode (", self.__mode, ")")
                     # TODO: how to terminate?
-            # self.update()
             self.__mouseX = a0.pos().x()
             self.__mouseY = a0.pos().y()
         self.__mouse_indicator.paint(mouse_pos.x(), mouse_pos.y(), self.__scene)
-        super().mouseMoveEvent(a0)
 
     def mousePressEvent(self, a0: QMouseEvent):
         super().mousePressEvent(a0)
