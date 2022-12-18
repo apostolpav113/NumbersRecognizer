@@ -1,7 +1,7 @@
 import sys
 import numpy as np
-from painter import ScenePainter
-
+from painter import ScenePainter, ScenePainterMode
+from cluster import Clusterizator
 from PyQt6.QtWidgets import *
 
 
@@ -42,6 +42,7 @@ class Application(object):
         self.__left_panel.setLayout(QVBoxLayout())
         self.__button_recognize = QPushButton()
         self.__button_recognize.setText("Распознать")
+        self.__button_recognize.clicked.connect(self.__button_recognize_clicked)
         self.__left_panel.layout().addWidget(self.__button_recognize)
         self.__left_panel.layout().addSpacerItem(QSpacerItem(10, 10, vPolicy=QSizePolicy.Policy.Expanding))
         self.__left_panel.setFixedWidth(200)
@@ -60,6 +61,10 @@ class Application(object):
 
     def __painter_toolbutton_modeerase_clicked(self):
         self.__painter.setmode(ScenePainterMode.ERASE)
+
+    def __button_recognize_clicked(self):
+        clusterizator = Clusterizator(self.__painter.getpixmap())
+        clusterizator.clusterize()
 
     def run(self):
         self.__main_window.show()
