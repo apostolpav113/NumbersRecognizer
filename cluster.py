@@ -38,6 +38,10 @@ class Clusterizator(object):
         #     print("Point: x=", self.__points_array.points[i].x, "y=", self.__points_array.points[i].y)
 
     def clusterize(self):
+        if len(self.__points_array.points) == 0:
+            print("No points found, nothing to do")
+            return []
+
         print("Features before: ", self.__points_array.get_features()[:5])
         # preprocess data, so that the features have a mean of 0 and standard deviation of 1
         scaler = StandardScaler()
