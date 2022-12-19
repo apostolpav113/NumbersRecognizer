@@ -31,11 +31,15 @@ class Clusterizator(object):
     def __init__(self, pixmap: QPixmap):
         self.__points_array = PointsArray()
         self.__pixmap = pixmap
+        self.__progress_callback = None
         self.__prepare_data()
         print("Found points: ", len(self.__points_array.points))
         print("As numpy array: ", self.__points_array.get_features().shape)
         # for i in range(len(self.__points_array.points)):
         #     print("Point: x=", self.__points_array.points[i].x, "y=", self.__points_array.points[i].y)
+
+    def set_progress_callback(self, callback):
+        self.__progress_callback = callback
 
     def clusterize(self):
         if len(self.__points_array.points) == 0:
@@ -55,16 +59,14 @@ class Clusterizator(object):
             "random_state": 42,
         }
 
-        # kmeans = KMeans(
-        #     init="random",
-        #     n_clusters = 3,
-        #     n_init = 1000,
-        #     max_iter = 3000,
-        #     random_state = 42)
         sse = []
         silhouette_coefficients = []
-        for i in range(1,20):
+        max_steps = 20
+
+        for i in range(1, max_steps):
             print("precalculate k-means, iteration = ", i)
+            if self.__progress_callback is not None and callable(self.__progress_callback):
+                self.__progress_callback(int(i/max_steps*100))
             kmeans = KMeans(n_clusters=i, **kmeans_kwargs)
             kmeans.fit(scaled_features)
             sse.append(kmeans.inertia_)
@@ -75,7 +77,7 @@ class Clusterizator(object):
         print("sse:", sse)
         print("calculate elbow point..")
         knee_locator = KneeLocator(
-            range(1, 20), sse, curve = "convex", direction = "decreasing"
+            range(1, max_steps), sse, curve = "convex", direction = "decreasing"
         )
         print("knee_locator.elbow:", knee_locator.elbow)
         print("silhouette_coefficients:", silhouette_coefficients)
@@ -89,6 +91,7 @@ class Clusterizator(object):
         print("The number of iterations required to converge:", kmeans.n_iter_)
         print("the cluster assignments:", kmeans.labels_)
 
+        # generate results
         rs_clusters = []
         for i in range(knee_locator.elbow):
             rs_clusters.append([])

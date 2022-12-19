@@ -10,15 +10,19 @@ from PyQt6.QtCore import QSize
 class Application(object):
     def __init__(self, argv, title: str):
         self.__app = QApplication(argv)
+
+        # init main window
         self.__main_window = QMainWindow()
         self.__main_window.setWindowTitle(title)
         screen = self.__app.primaryScreen()
         self.__main_window.resize(int(screen.size().width() * 3 / 5),
                                   int(screen.size().height() * 3 / 5))
 
+        # init painter component
         self.__painter = ScenePainter()
         self.__painter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
+        # init other user interface components
         self.__painter_toolbar = QToolBar()
         self.__painter_toolbar.setIconSize(QSize(16, 16))
 
@@ -58,6 +62,11 @@ class Application(object):
         self.__label_result = QLabel()
         self.__left_panel.layout().addWidget(self.__label_result)
 
+        self.__progress_bar = QProgressBar()
+        self.__progress_bar.setMaximum(100)
+        self.__progress_bar.setVisible(False)
+        self.__left_panel.layout().addWidget(self.__progress_bar)
+
         self.__result_widget = QWidget()
         self.__result_widget.setLayout(QVBoxLayout())
         self.__left_panel.layout().addWidget(self.__result_widget)
@@ -74,6 +83,7 @@ class Application(object):
 
         self.__main_window.setCentralWidget(self.__central_widget)
 
+        #
         self.__show_result_buttons = []
 
     def __painter_toolbutton_modepaint_clicked(self):
@@ -102,18 +112,28 @@ class Application(object):
         self.__painter_toolbutton_modepaint.setEnabled(enabled)
         self.__painter_toolbutton_modeerase.setEnabled(enabled)
         self.__main_window.update()
+        self.__app.processEvents()
+
+    def __progress_callback(self, progress: int):
+        self.__progress_bar.setValue(progress)
+        self.__app.processEvents()
 
     def __button_recognize_clicked(self):
         self.__remove_result_components()
         self.__enable_components(False)
         self.__label_result.setText("Кластеризация...")
 
+        self.__progress_bar.setValue(0)
+        self.__progress_bar.setVisible(True)
+
         clusterizator = Clusterizator(self.__painter.getpixmap())
+        clusterizator.set_progress_callback(self.__progress_callback)
         self.__clusters = clusterizator.clusterize()
         cluster_count = len(self.__clusters)
         self.__label_result.setText("Найдено кластеров: " + str(cluster_count))
 
         self.__enable_components(True)
+        self.__progress_bar.setVisible(False)
 
         if cluster_count == 0:
             return
