@@ -53,8 +53,9 @@ class MouseIndicatorErase(MouseIndicator):
 
 class ScenePainter(QGraphicsView):
     def __init__(self):
+        super().__init__()
         self.__scene = QGraphicsScene(0, 0, 1024, 768)
-        super().__init__(self.__scene)
+        self.setScene(self.__scene)
 
         self.setMouseTracking(True)
         self.__mouse_pressed = False
@@ -65,6 +66,32 @@ class ScenePainter(QGraphicsView):
         self.__mode: ScenePainterMode = ScenePainterMode.PAINT
         self.__mouseX, self.__mouseY = None, None
         self.__bg = None
+
+        self.__highlighted_points = []
+
+    def clear(self):
+        self.__mouse_indicator.hide(self.__scene)
+        self.__remove_highlighted_points()
+        if self.__bg is not None:
+            self.__scene.removeItem(self.__bg)
+
+        self.__scene.clear()
+
+        self.__mouseX, self.__mouseY = None, None
+        self.__bg = None
+
+        self.on_resize()
+
+    def __remove_highlighted_points(self):
+        if len(self.__highlighted_points) > 0:
+            for i in range(len(self.__highlighted_points)):
+                self.__scene.removeItem(self.__highlighted_points[i])
+        self.__highlighted_points = []
+
+    def highlight_points(self, points):
+        self.__remove_highlighted_points()
+        for i in range(len(points)):
+            self.__highlighted_points.append(self.__scene.addRect(points[i].x-1, points[i].y-1, 2, 2, QColor("red")))
 
     def setmode(self, mode: ScenePainterMode):
         self.__mode = mode
@@ -81,8 +108,8 @@ class ScenePainter(QGraphicsView):
         self.__scene.render(painter)
         return pixmap
 
-    def resizeEvent(self, a0: QResizeEvent) -> None:
-        super().resizeEvent(a0)
+    def on_resize(self):
+        print("on_resize")
         if self.__bg is not None:
             self.__scene.removeItem(self.__bg)
         self.__scene.setSceneRect(0, 0, self.width(), self.height())
@@ -93,10 +120,15 @@ class ScenePainter(QGraphicsView):
                                          QBrush(QColor(255, 255, 255, 255)))
         self.__bg.setZValue(-1)
 
+    def resizeEvent(self, a0: QResizeEvent) -> None:
+        super().resizeEvent(a0)
+        self.on_resize()
+
     def mouseMoveEvent(self, a0: QMouseEvent) -> None:
         super().mouseMoveEvent(a0)
         mouse_pos = self.mapToScene(a0.pos().x(), a0.pos().y())
         if self.__mouse_pressed:
+            self.__remove_highlighted_points()
             if self.__mouseX is not None:
                 if self.__mode == ScenePainterMode.PAINT:
                     pen = QPen()
