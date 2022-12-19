@@ -2,6 +2,7 @@ import sys
 from functools import partial
 from painter import ScenePainter, ScenePainterMode
 from cluster import Clusterizator
+from numbers_recognition import NumbersRecognizer
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QSize
@@ -129,6 +130,10 @@ class Application(object):
         clusterizator = Clusterizator(self.__painter.getpixmap())
         clusterizator.set_progress_callback(self.__progress_callback)
         self.__clusters = clusterizator.clusterize()
+
+        self.__label_result.setText("Распознавание...")
+        numbers_recognizer = NumbersRecognizer()
+
         cluster_count = len(self.__clusters)
         self.__label_result.setText("Найдено кластеров: " + str(cluster_count))
 

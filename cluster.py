@@ -26,7 +26,8 @@ class PointsArray(object):
     def get_features(self):
         return np.array(self.__features)
 
-
+# see: https://realpython.com/k-means-clustering-python/
+#      https://www.dominodatalab.com/blog/getting-started-with-k-means-clustering-in-python
 class Clusterizator(object):
     def __init__(self, pixmap: QPixmap):
         self.__points_array = PointsArray()
