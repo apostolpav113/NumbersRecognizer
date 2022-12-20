@@ -14,6 +14,9 @@ class ImageConverter(object):
         self.__image = self.__scale_image(self.__image, 20, 20)
         self.__data_array = self.__prepare_image_for_mnist(self.__image)
 
+    def get_image(self):
+        return self.__image
+
     def get_data(self):
         return self.__data_array
 
@@ -58,7 +61,6 @@ class ImageConverter(object):
         image = image.scaled(width, height,
                              QtCore.Qt.AspectRatioMode.KeepAspectRatio,
                              QtCore.Qt.TransformationMode.SmoothTransformation)
-        image.save("number.png")
         return image
 
     def __shift_image_to_center_of_mass(self, img):

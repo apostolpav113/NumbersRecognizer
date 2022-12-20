@@ -167,6 +167,7 @@ class Application(object):
 
         self.__progress_bar.setValue(0)
         self.__progress_bar.setVisible(True)
+        self.__app.processEvents()
 
         clusterizator = Clusterizator(self.__painter.getpixmap())
         clusterizator.set_progress_callback(self.__progress_callback)
@@ -181,9 +182,11 @@ class Application(object):
         numbers_recognizer = NumbersRecognizer()
 
         self.__cluster_predictions = []
+        self.__cluster_images = []
         for i in range(cluster_count):
             converter = image_converter.ImageConverter(self.__clusters[i])
             self.__cluster_predictions.append(numbers_recognizer.do_predict(converter.get_data()))
+            self.__cluster_images.append(converter.get_image())
             self.__progress_callback(int(100 + i/cluster_count*100))
 
         self.__label_result.setText("Найдено кластеров: " + str(cluster_count))
@@ -217,6 +220,7 @@ class Application(object):
 
     def show_cluster(self, index):
         self.__painter.highlight_points(self.__clusters[index])
+        self.__cluster_images[index].save("number.png")
         print("Prediction:", self.__cluster_predictions[index])
         print("Prediction argmax:", np.argmax(self.__cluster_predictions[index]))
         self.__show_result_buttons[index].setIcon(QIcon("icons/light-bulb.png"))
