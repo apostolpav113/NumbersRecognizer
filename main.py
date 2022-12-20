@@ -66,7 +66,7 @@ class Application(object):
         self.__left_panel.layout().addWidget(self.__label_result)
 
         self.__progress_bar = QProgressBar()
-        self.__progress_bar.setMaximum(100)
+        self.__progress_bar.setMaximum(200)
         self.__progress_bar.setVisible(False)
         self.__left_panel.layout().addWidget(self.__progress_bar)
 
@@ -74,7 +74,8 @@ class Application(object):
         self.__result_widget.setLayout(QVBoxLayout())
         self.__left_panel.layout().addWidget(self.__result_widget)
 
-        self.__left_panel.layout().addSpacerItem(QSpacerItem(10, 10, vPolicy=QSizePolicy.Policy.Expanding))
+        self.__left_panel.layout().addSpacerItem(QSpacerItem(10, 10,
+                                                             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.__left_panel.setFixedWidth(200)
 
         self.__main_layout = QHBoxLayout()
@@ -132,11 +133,18 @@ class Application(object):
         clusterizator = Clusterizator(self.__painter.getpixmap())
         clusterizator.set_progress_callback(self.__progress_callback)
         self.__clusters = clusterizator.clusterize()
+        cluster_count = len(self.__clusters)
 
         self.__label_result.setText("Распознавание...")
+        self.__app.processEvents()
         numbers_recognizer = NumbersRecognizer()
 
-        cluster_count = len(self.__clusters)
+        self.__cluster_predictions = []
+        for i in range(cluster_count):
+            converter = image_converter.ImageConverter(self.__clusters[i])
+            self.__cluster_predictions.append(numbers_recognizer.do_predict(converter.get_data()))
+            self.__progress_callback(int(100 + i/cluster_count*100))
+
         self.__label_result.setText("Найдено кластеров: " + str(cluster_count))
 
         self.__enable_components(True)
@@ -148,8 +156,13 @@ class Application(object):
         for i in range(cluster_count):
             widget = QWidget()
             widget.setLayout(QHBoxLayout())
+            labels_widget = QWidget()
+            labels_widget.setLayout(QVBoxLayout())
             label = QLabel("Кластер " + str(i+1))
-            widget.layout().addWidget(label)
+            label_prediction = QLabel("Прогноз: " + str(np.argmax(self.__cluster_predictions[i])))
+            labels_widget.layout().addWidget(label)
+            labels_widget.layout().addWidget(label_prediction)
+            widget.layout().addWidget(labels_widget)
             button = QToolButton()
             button.setCheckable(True)
             button.setIcon(QIcon("icons/light-bulb-off.png"))
@@ -163,13 +176,8 @@ class Application(object):
 
     def show_cluster(self, index):
         self.__painter.highlight_points(self.__clusters[index])
-
-        converter = image_converter.ImageConverter(self.__clusters[index])
-
-        numbers_recognizer = NumbersRecognizer()
-        print("Prediction:", numbers_recognizer.do_predict(converter.get_data()))
-        print("Prediction argmax:", np.argmax(numbers_recognizer.do_predict(converter.get_data())))
-
+        print("Prediction:", self.__cluster_predictions[index])
+        print("Prediction argmax:", np.argmax(self.__cluster_predictions[index]))
         self.__show_result_buttons[index].setIcon(QIcon("icons/light-bulb.png"))
         for i in range(len(self.__show_result_buttons)):
             if i == index:

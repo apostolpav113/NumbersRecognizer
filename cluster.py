@@ -10,7 +10,6 @@ class Point(object):
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
-        self.label = ""
         self.cluster_index = -1
 
 
@@ -26,6 +25,7 @@ class PointsArray(object):
     def get_features(self):
         return np.array(self.__features)
 
+
 # see: https://realpython.com/k-means-clustering-python/
 #      https://www.dominodatalab.com/blog/getting-started-with-k-means-clustering-in-python
 class Clusterizator(object):
@@ -34,10 +34,6 @@ class Clusterizator(object):
         self.__pixmap = pixmap
         self.__progress_callback = None
         self.__prepare_data()
-        print("Found points: ", len(self.__points_array.points))
-        print("As numpy array: ", self.__points_array.get_features().shape)
-        # for i in range(len(self.__points_array.points)):
-        #     print("Point: x=", self.__points_array.points[i].x, "y=", self.__points_array.points[i].y)
 
     def set_progress_callback(self, callback):
         self.__progress_callback = callback
@@ -47,11 +43,9 @@ class Clusterizator(object):
             print("No points found, nothing to do")
             return []
 
-        print("Features before: ", self.__points_array.get_features()[:5])
         # preprocess data, so that the features have a mean of 0 and standard deviation of 1
         scaler = StandardScaler()
         scaled_features = scaler.fit_transform(self.__points_array.get_features())
-        print("Scaled: ", scaled_features[:5])
 
         kmeans_kwargs = {
             "init": "random",
@@ -67,7 +61,7 @@ class Clusterizator(object):
         for i in range(1, max_steps):
             print("precalculate k-means, iteration = ", i)
             if self.__progress_callback is not None and callable(self.__progress_callback):
-                self.__progress_callback(int(i/max_steps*100))
+                self.__progress_callback(int(i / max_steps * 100))
             kmeans = KMeans(n_clusters=i, **kmeans_kwargs)
             kmeans.fit(scaled_features)
             sse.append(kmeans.inertia_)
@@ -78,11 +72,11 @@ class Clusterizator(object):
         print("sse:", sse)
         print("calculate elbow point..")
         knee_locator = KneeLocator(
-            range(1, max_steps), sse, curve = "convex", direction = "decreasing"
+            range(1, max_steps), sse, curve="convex", direction="decreasing"
         )
         print("knee_locator.elbow:", knee_locator.elbow)
         print("silhouette_coefficients:", silhouette_coefficients)
-        print("max:", np.array(silhouette_coefficients).argmax() + 2)
+        print("max silhouette_coefficients:", np.array(silhouette_coefficients).argmax() + 2)
 
         kmeans = KMeans(n_clusters=knee_locator.elbow, **kmeans_kwargs)
         kmeans.fit(scaled_features)
@@ -108,8 +102,8 @@ class Clusterizator(object):
         #    (for simplicity, assume that we have only 2 colors in the image)
         transform_func = lambda c: \
             0.0 if c[0][0] == 255 else \
-            1.0 if c[0][0] == 0 else \
-            (c[0][0] + c[0][1] + c[0][2]) / 3 / 255
+                1.0 if c[0][0] == 0 else \
+                    (c[0][0] + c[0][1] + c[0][2]) / 3 / 255
         transform_func_vec = np.vectorize(transform_func, signature="(n,m)->()")
 
         image = self.__pixmap.toImage()
@@ -126,5 +120,5 @@ class Clusterizator(object):
         #    so now we are transforming the result image matrix into a vector of non-empty points:
         for i in range(image.height()):
             for j in range(image.width()):
-                if rs[i,j] != 0.0:
+                if rs[i, j] != 0.0:
                     self.__points_array.add(Point(j, i))
