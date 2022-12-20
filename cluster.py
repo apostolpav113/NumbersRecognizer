@@ -38,8 +38,11 @@ class Clusterizator(object):
     def set_progress_callback(self, callback):
         self.__progress_callback = callback
 
-    def clusterize(self):
-        if len(self.__points_array.points) == 0:
+    def clusterize(self, auto_find_clusters_count: bool, clusters_count: int):
+        # if auto_find_clusters_count is True then clusters_count represents MAX clusters count
+        # otherwise it is just the fixed count of clusters to recognize
+
+        if len(self.__points_array.points) == 0 or clusters_count == 0:
             print("No points found, nothing to do")
             return []
 
@@ -54,31 +57,37 @@ class Clusterizator(object):
             "random_state": 42,
         }
 
-        sse = []
-        silhouette_coefficients = []
-        max_steps = 20
+        nclusters = clusters_count
 
-        for i in range(1, max_steps):
-            print("precalculate k-means, iteration = ", i)
-            if self.__progress_callback is not None and callable(self.__progress_callback):
-                self.__progress_callback(int(i / max_steps * 100))
-            kmeans = KMeans(n_clusters=i, **kmeans_kwargs)
-            kmeans.fit(scaled_features)
-            sse.append(kmeans.inertia_)
-            if i > 1:
-                score = silhouette_score(scaled_features, kmeans.labels_)
-                silhouette_coefficients.append(score)
-        # search for elbow point
-        print("sse:", sse)
-        print("calculate elbow point..")
-        knee_locator = KneeLocator(
-            range(1, max_steps), sse, curve="convex", direction="decreasing"
-        )
-        print("knee_locator.elbow:", knee_locator.elbow)
-        print("silhouette_coefficients:", silhouette_coefficients)
-        print("max silhouette_coefficients:", np.array(silhouette_coefficients).argmax() + 2)
+        if auto_find_clusters_count and clusters_count > 1:
+            sse = []
+            silhouette_coefficients = []
+            max_steps = clusters_count
+            for i in range(1, max_steps+1):
+                print("precalculate k-means, iteration = ", i)
+                if self.__progress_callback is not None and callable(self.__progress_callback):
+                    self.__progress_callback(int(i / max_steps * 100))
+                kmeans = KMeans(n_clusters=i, **kmeans_kwargs)
+                kmeans.fit(scaled_features)
+                sse.append(kmeans.inertia_)
+                if i > 1:
+                    score = silhouette_score(scaled_features, kmeans.labels_)
+                    silhouette_coefficients.append(score)
+            # search for elbow point
+            print("sse:", sse)
+            print("calculate elbow point..")
+            knee_locator = KneeLocator(
+                range(1, max_steps+1), sse, curve="convex", direction="decreasing"
+            )
+            print("knee_locator.elbow:", knee_locator.elbow)
+            print("silhouette_coefficients:", silhouette_coefficients)
+            print("max silhouette_coefficients:", np.array(silhouette_coefficients).argmax() + 2)
+            if knee_locator.elbow is None:
+                print("Elbow point not found")
+                return []
+            nclusters = knee_locator.elbow
 
-        kmeans = KMeans(n_clusters=knee_locator.elbow, **kmeans_kwargs)
+        kmeans = KMeans(n_clusters=nclusters, **kmeans_kwargs)
         kmeans.fit(scaled_features)
         print("kmeans.n_clusters:", kmeans.n_clusters)
         print("The lowest SSE value:", kmeans.inertia_)
@@ -88,7 +97,7 @@ class Clusterizator(object):
 
         # generate results
         rs_clusters = []
-        for i in range(knee_locator.elbow):
+        for i in range(nclusters):
             rs_clusters.append([])
         for i in range(len(kmeans.labels_)):
             cluster_index = kmeans.labels_[i]
