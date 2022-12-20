@@ -1,8 +1,10 @@
 import sys
+import numpy as np
 from functools import partial
 from painter import ScenePainter, ScenePainterMode
 from cluster import Clusterizator
 from numbers_recognition import NumbersRecognizer
+import image_converter
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QSize
@@ -161,6 +163,13 @@ class Application(object):
 
     def show_cluster(self, index):
         self.__painter.highlight_points(self.__clusters[index])
+
+        converter = image_converter.ImageConverter(self.__clusters[index])
+
+        numbers_recognizer = NumbersRecognizer()
+        print("Prediction:", numbers_recognizer.do_predict(converter.get_data()))
+        print("Prediction argmax:", np.argmax(numbers_recognizer.do_predict(converter.get_data())))
+
         self.__show_result_buttons[index].setIcon(QIcon("icons/light-bulb.png"))
         for i in range(len(self.__show_result_buttons)):
             if i == index:

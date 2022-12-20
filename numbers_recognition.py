@@ -62,3 +62,6 @@ class NumbersRecognizer(object):
         model.save(model_file_path)
 
         return model
+
+    def do_predict(self, input):
+        return self.__model.predict(input)
